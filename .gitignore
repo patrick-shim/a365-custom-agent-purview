@@ -1,0 +1,16 @@
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+*.pyc
+logs/
+dist/
+.local/
+a365.config.json
+a365.generated.config.json
+*token_cache*
+*.pem
+*.pfx
+*.key

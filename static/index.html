@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OneDrive · Purview Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<main>
+  <header><div><p class="eyebrow">AGENT 365 / LOCAL TEST</p><h1>Ask about your OneDrive.</h1><p class="intro">Document text is checked by Purview before it reaches the model.</p></div><span class="badge">TXT FILES</span></header>
+  <section class="account" aria-label="Account">
+    <div><strong id="account">Checking setup…</strong><p id="account-hint">Sign in to read your own OneDrive.</p></div>
+    <a id="signin" class="button" href="/auth/login">Sign in with Microsoft</a><button id="signout" hidden>Sign out</button>
+  </section>
+  <section id="setup" class="notice" hidden><strong>Finish local setup</strong><p id="setup-text"></p><p>See <code>README.md</code> and <code>docs/onboarding.md</code> in the project folder.</p></section>
+  <section id="conversation" class="conversation" aria-label="Conversation" aria-live="polite">
+    <div class="welcome"><h2>A document, with a policy check.</h2><p>Enter a path relative to your OneDrive root, such as <code>test-summary.txt</code>, then ask for a summary. Leave the path empty for ordinary text chat.</p><p>Only complete UTF-8 text files are supported. Blocked or unreadable files are withheld.</p></div>
+  </section>
+  <form id="chat-form">
+    <label for="file-path">OneDrive path <span>optional</span></label>
+    <input id="file-path" name="file_path" placeholder="test-summary.txt" maxlength="1024" autocomplete="off">
+    <label for="message">Your message</label>
+    <textarea id="message" name="message" rows="3" maxlength="8000" placeholder="Summarize this document." required></textarea>
+    <div class="actions"><p id="status" role="status">Sign in to start.</p><button id="send" class="button" type="submit" disabled>Send message <span aria-hidden="true">↗</span></button></div>
+  </form>
+  <footer>Input and file checks require inline protection. Response checks may be audit-only, depending on your tenant policy.</footer>
+</main>
+</body>
+</html>

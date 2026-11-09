@@ -1,0 +1,9 @@
+{
+  "tenantId": "<ENTRA_TENANT_ID>",
+  "clientAppId": "<CLI_CLIENT_APP_ID>",
+  "agentIdentityDisplayName": "<AGENT_DISPLAY_NAME>",
+  "agentBlueprintDisplayName": "<EXISTING_BLUEPRINT_DISPLAY_NAME>",
+  "aiTeammate": false,
+  "useBlueprint": true,
+  "authMode": "obo"
+}

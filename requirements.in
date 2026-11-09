@@ -1,0 +1,12 @@
+# Direct dependencies; requirements.txt is the tested, fully pinned environment.
+fastapi
+uvicorn
+httpx
+msal
+azure-identity
+openai
+python-dotenv
+PyJWT[crypto]
+microsoft-agents-authentication-msal==1.9.0
+microsoft-agents-a365-runtime==2.0.0
+pytest
