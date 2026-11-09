@@ -12,6 +12,8 @@
 
 **No .NET or a365 CLI allowed?** Use the [restricted-environment runbook](docs/restricted-environment.md). Runtime needs no a365 tools or configuration files. The customer runs and signs in locally with centrally approved identities and policies; external support does not need tenant access. Model authentication is a separate choice described in that guide.
 
+**향후 권장 아키텍처 — 이번 POC 범위 밖:** [Purview로 보호하는 OneDrive MCP 설계안](docs/protected-onedrive-mcp-design.md)에 공통 MCP 서버·스킬의 역할, 사용자별 OBO 흐름과 도입 조건을 정리했습니다. **MCP 방식은 미구현 제안이며, 이번 POC는 현재 Python 에이전트 코드를 그대로 사용합니다.** / The [protected OneDrive MCP design](docs/protected-onedrive-mcp-design.md) is a future recommendation, unimplemented and outside this POC. The current Python agent remains the POC implementation.
+
 ### 먼저 구분하기: MSAL, 앱 등록, Agent ID
 
 | 용어 / Term | 역할 / Role |
