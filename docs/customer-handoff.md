@@ -1,5 +1,9 @@
 # 고객에게 받을 값과 권한 · Customer handoff checklist
 
+**상위 부서에서 ID를 제공하고 고객이 .NET/CLI·앱 등록·정책 변경을 할 수 없다면:** [제한 환경 실행 안내](restricted-environment.md)를 먼저 사용합니다. 아래의 관리자 준비 항목은 **상위 부서에 기존 설정을 확인할 항목**입니다. 고객 담당자에게 추가 관리자 권한을 요구하거나 새 설정을 직접 수행하라는 뜻이 아닙니다. 외부 지원자가 테넌트에 접근할 수 없다면 고객이 자신의 승인된 PC에서 설정·로그인·검사를 수행하고, 허용된 진단 결과만 공유합니다. Secret은 외부 지원자에게 전달하지 않고 고객 PC에 보관해도 됩니다.
+
+**English:** When upstream IT provides identities and restricts administration, follow the [restricted runbook](restricted-environment.md). Ask upstream IT to confirm existing approved configuration first. Customers run and authenticate locally; external support can work from approved diagnostic results without tenant access or customer secrets.
+
 **고객 환경을 이 PC에서 테스트하려면, 고객의 설정값과 앱 자격 증명뿐 아니라 고객 테넌트 사용자의 실제 로그인도 필요합니다.** OBO는 로그인한 사용자를 대신하는 방식입니다. Tenant ID·사용자 이름·Agent ID를 입력하는 것만으로 고객의 OneDrive를 읽을 수는 없습니다.
 
 가장 간단한 준비 방법은 **고객 관리자가 앱·권한·Purview 정책을 준비하고, OneDrive가 있는 고객 테스트 사용자가 로그인하는 것**입니다. 이 프로젝트의 Microsoft 365 쪽 구성은 같은 고객 테넌트의 웹 앱, Blueprint, 자식 Agent ID, 테스트 사용자, OneDrive, Purview를 전제로 합니다. Foundry는 별도로 접근 권한이 확보된 다른 테넌트여도 됩니다.
@@ -70,7 +74,9 @@ API permissions 화면에 항목을 추가한 것만으로 끝내지 말고 **�
 
 Azure OpenAI 모델을 이 예제의 v1 API로 호출할 때는 모델 리소스 범위의 **Cognitive Services OpenAI User**가 대표적인 최소 역할입니다. 고객의 배포 종류에 맞는 inference 권한을 확인합니다. Azure 구독 `Reader`만으로 모델 호출 권한이 생기는 것은 아닙니다. 기본 방식에서는 `FOUNDRY_AUTH_MODE=azure_cli`로 두고, 로컬 실행자가 `az login --tenant "<FOUNDRY_TENANT_ID>"`로 로그인합니다. [키 없는 Azure OpenAI 인증과 역할](https://learn.microsoft.com/en-us/azure/developer/ai/keyless-connections)
 
-**OneDrive `Files.Read`는 웹 앱이 아니라 자식 Agent ID에 줍니다.** MSAL은 로그인 코드를 제공하는 라이브러리이며 앱 등록이나 동의를 대신하지 않습니다. 이 구현은 자식에 직접 권한을 부여하므로 Blueprint에 Graph 파일 읽기 권한을 추가하거나 권한 상속을 새로 설정할 필요가 없습니다.
+**OneDrive `Files.Read`를 사용하는 주체는 웹 앱이 아니라 자식 Agent ID입니다.** MSAL은 로그인 코드를 제공하는 라이브러리이며 앱 등록이나 동의를 대신하지 않습니다. 이 저장소의 관리 예제는 자식에 직접 권한을 부여합니다. 그러나 고객 상위 부서가 Blueprint 동의와 상속으로 필요한 권한을 이미 제공했다면 기존 방식을 먼저 확인하며, 직접 동의를 추가할 필요가 있다고 단정하지 않습니다. 상속 권한은 자식 권한 목록에 표시되지 않을 수 있습니다. [유효 권한: 직접 부여와 상속](https://learn.microsoft.com/en-us/entra/agent-id/concept-inheritable-permissions)
+
+**English:** The child uses the Graph scopes. Existing centrally approved inheritance can supply those effective scopes; do not require new direct grants merely because the repository's provisioning example uses them. Inherited permissions may not appear in the child's permission listing.
 
 고객이 직접 동의를 설정하면 아래 관리용 ID를 로컬 실행자에게 모두 전달할 필요는 없습니다. 우리가 설정을 도와야 한다면 고객 담당자와 다음 ID도 확인합니다.
 
@@ -134,6 +140,8 @@ CLI 인증 앱의 필요한 관리 범위와 등록 명령은 [환경값별 CLI 
 **English:** Use an approved clean TXT and a synthetic fixture confirmed by the SIT tester. Verify network/Conditional Access, successful retrieval, actual content blocking, and zero model calls in the diagnostic. Fail-closed errors are not evidence of SIT detection. The local process receives the file, Purview receives its full text, and only permitted content reaches the configured Foundry model.
 
 ## 고객에게 바로 보낼 요청문 · Copyable request
+
+아래 문구는 설정 담당자에게 보내는 일반 요청문입니다. 권한이 제한된 고객은 [상위 부서용 기존 설정 확인 요청문](restricted-environment.md)을 사용하세요. / Restricted customers should use the upstream-IT confirmation request in the linked runbook.
 
 > 고객 테넌트에서 OneDrive 문서의 Purview 차단을 로컬 Python 에이전트로 테스트하려고 합니다.
 >

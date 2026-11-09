@@ -8,13 +8,17 @@
 
 **고객 환경으로 실행하려면:** [고객에게 받을 설정값·권한 요청서](docs/customer-handoff.md)를 먼저 전달하세요. 받을 값, 고객 관리자가 준비할 권한·정책, 사용자 로그인, 비밀값 전달 방법을 구분했습니다. / To run against a customer's tenant, start with the [customer configuration and permission checklist](docs/customer-handoff.md).
 
+**.NET·a365 CLI를 설치할 수 없고 상위 부서가 ID를 제공하나요?** [기존 ID로 실행하는 제한 환경 안내](docs/restricted-environment.md)를 따르세요. Python 실행에는 .NET, a365 CLI, `a365.config.json`, `a365.generated.config.json`이 필요하지 않습니다. 고객이 승인된 PC에서 실행·로그인하고, 외부 지원자는 승인된 진단 결과로 지원할 수 있습니다. 기존 권한·Purview 정책이 부족하면 상위 부서가 판단해야 하며, Secret만 입력한다고 권한이나 정책이 생기지 않습니다.
+
+**No .NET or a365 CLI allowed?** Use the [restricted-environment runbook](docs/restricted-environment.md). Runtime needs no a365 tools or configuration files. The customer runs and signs in locally with centrally approved identities and policies; external support does not need tenant access. Model authentication is a separate choice described in that guide.
+
 ### 먼저 구분하기: MSAL, 앱 등록, Agent ID
 
 | 용어 / Term | 역할 / Role |
 |---|---|
 | 앱 등록 / App registration | Entra에 로그인 클라이언트의 신원을 등록하고 **Client ID**를 받습니다. / Defines the client's identity in Entra. |
 | MSAL | 그 **Client ID를 사용해** 로그인과 토큰 요청을 처리하는 Python 라이브러리입니다. 앱 등록을 대신하지 않습니다. / A library that uses the registered client identity. |
-| 자식 Agent ID + OBO | 로그인한 사람을 대신해 Graph를 호출합니다. **OneDrive의 `Files.Read`와 Purview 권한은 이 자식에 부여**합니다. / The child performs delegated Graph calls. |
+| 자식 Agent ID + OBO | 로그인한 사람을 대신해 Graph를 호출합니다. **직접 부여 또는 상속으로 제공된 OneDrive·Purview 권한을 이 자식이 사용**합니다. / The child uses effective delegated Graph permissions. |
 
 **기존 MSAL 웹 로그인 앱이 있다면 재사용할 수 있습니다.** 같은 테넌트의 Web 앱에 이 예제의 callback, 사용할 비밀값, Blueprint API 범위와 사용자 동의가 준비되어 있으면 됩니다. 새 웹 앱을 만드는 것은 이 독립 브라우저 예제에 호환되는 로그인 앱이 없을 때뿐입니다. 웹 앱이 OneDrive 파일을 읽는 구조가 아닙니다.
 
@@ -27,7 +31,7 @@
 1. Git으로 코드를 받습니다.
 2. Python 실행 환경과 도구를 준비합니다.
 3. 테넌트·Blueprint·자식 에이전트·로그인 앱·모델 값을 찾아 설정합니다.
-4. 권한과 Purview 정책을 연결하고 Agent 365에 등록합니다.
+4. 기존 권한·Purview 정책·등록 상태를 확인합니다. 부족한 설정은 권한 있는 담당자가 처리합니다.
 5. 실행하고 결과를 확인합니다.
 
 처음이라면 순서대로 진행해 주세요. `<...>`는 실제 값으로 바꿀 자리이며, 그대로 입력하는 값이 아닙니다. 모든 명령은 **PowerShell** 기준입니다.
@@ -55,11 +59,16 @@ py -3.14 -m venv .venv
 
 첫 명령에 `Python 3.14...`가 표시되면 됩니다. `.venv` 안의 Python을 직접 사용하므로 활성화 명령은 필요 없습니다.
 
-추가로 [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows)를 설치합니다. Agent 365 등록을 담당한다면 [.NET 8 이상과 Agent 365 CLI](https://learn.microsoft.com/en-us/microsoft-agent-365/developer/agent-365-cli)도 준비합니다. 이 예제의 CLI 절차는 `1.1.221`에서 확인했습니다.
+**Foundry 인증을 `azure_cli`로 사용할 때만** [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows)를 준비합니다. 고객이 승인한 기존 API key 방식을 사용한다면 Azure CLI도 필요하지 않습니다. 키 사용이 금지된 환경에서 임의로 키 방식을 선택하지 않고, 상위 부서가 허용하는 모델 연결 방법을 확인합니다.
 
 ```powershell
 az --version
-# Agent 365 CLI가 아직 없을 때만 설치 / Install only if absent.
+```
+
+아래는 **등록 작업을 맡은 관리자만** 실행합니다. 기존 ID로 실행하는 고객은 건너뜁니다. [.NET 8 이상과 Agent 365 CLI](https://learn.microsoft.com/en-us/microsoft-agent-365/developer/agent-365-cli)를 사용하는 관리 절차는 `1.1.221`에서 확인했습니다.
+
+```powershell
+# 등록 담당자에게 설치가 허용되고 CLI가 없을 때만 / Authorized provisioning only.
 dotnet tool install --global Microsoft.Agents.A365.DevTools.Cli --version 1.1.221
 a365 --version
 ```
@@ -72,11 +81,10 @@ a365 --version
 
 ```powershell
 if (-not (Test-Path -LiteralPath .env)) { Copy-Item -LiteralPath .env.example -Destination .env }
-if (-not (Test-Path -LiteralPath a365.config.json)) { Copy-Item -LiteralPath a365.config.example.json -Destination a365.config.json }
 notepad .env
 ```
 
-`.env`는 프로그램 설정, `a365.config.json`은 CLI 설정입니다. 두 파일 모두 Git에서 제외됩니다. **이번 공개 예제는 ID와 연결값도 비어 있으므로 비밀값 2개만 입력하면 끝나는 구성이 아닙니다.** 아래 순서대로 채워 주세요. 더 자세한 화면 설명과 실행 가능한 Graph 설정 절차는 [환경값별 상세 안내](docs/environment-values.md)에 있습니다.
+`.env`는 프로그램 설정입니다. `a365.config.json`은 CLI 등록을 맡는 경우에만 3-9에서 준비합니다. 두 실제 파일 모두 Git에서 제외됩니다. **이번 공개 예제는 ID와 연결값도 비어 있으므로 비밀값 2개만 입력하면 끝나는 구성이 아닙니다.** 상위 부서가 값을 제공했다면 직접 생성하거나 변경하지 않고 해당 칸에 넣습니다. 더 자세한 화면 설명과 관리자용 Graph 설정 절차는 [환경값별 상세 안내](docs/environment-values.md)에 있습니다.
 
 | 값의 종류 / Type | 예 / Examples | Git 공유 / Sharing |
 |---|---|---|
@@ -85,7 +93,7 @@ notepad .env
 
 ID를 비워 둔 것은 다른 환경에서도 재사용하기 쉽게 하기 위한 것입니다. 실제 ID나 URL이 비밀값이라는 뜻은 아닙니다. `.env`에는 비밀값이 함께 들어 있으므로 파일 전체를 Git에서 제외합니다. / Blank IDs make the template reusable; IDs and URLs are not credentials. The complete `.env` is ignored because it also contains secrets.
 
-먼저 세 가지 앱의 역할을 구분하면 ID를 넣기 쉬워집니다. **OneDrive를 읽는 Graph 권한은 자식 Agent ID에 부여합니다.** 별도의 웹 앱은 브라우저에서 사람을 로그인시키고 Blueprint를 대상으로 하는 사용자 토큰을 받기 위해 필요합니다.
+먼저 세 가지 앱의 역할을 구분하면 ID를 넣기 쉬워집니다. **OneDrive를 읽는 Graph 권한을 실제로 사용하는 주체는 자식 Agent ID입니다.** 별도의 웹 앱은 브라우저에서 사람을 로그인시키고 Blueprint를 대상으로 하는 사용자 토큰을 받기 위해 필요합니다.
 
 | 역할 / Role | 설정 / Setting | 사용하는 권한 / Permission |
 |---|---|---|
@@ -205,7 +213,16 @@ az cognitiveservices account deployment list --resource-group "<resource-group>"
 
 로그인 성공만으로 모델 호출 권한이 보장되지는 않습니다. Azure 포털의 Foundry 리소스 **Access control (IAM) → Check access**에서 로그인한 계정의 추론 권한을 확인합니다. 권한이 없다면 관리자가 그 리소스에 맞는 모델 호출 역할을 추가해야 합니다. [키 없는 인증과 역할 설정](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/configure-entra-id), [엔드포인트 형태](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints)
 
-#### 3-9. CLI 파일과 나머지 기본값
+#### 3-9. 선택 CLI 설정과 나머지 기본값
+
+기존 ID로 Python만 실행한다면 아래 CLI 설정은 건너뛰고 **기본값 표**로 이동합니다. / Skip CLI setup when running existing identities; continue with the defaults table.
+
+<details>
+<summary><strong>등록 담당자만: CLI 설정 파일 / Provisioning staff only</strong></summary>
+
+```powershell
+if (-not (Test-Path -LiteralPath a365.config.json)) { Copy-Item -LiteralPath a365.config.example.json -Destination a365.config.json }
+```
 
 `notepad a365.config.json`을 열고 다음을 채웁니다. 예제의 `<...>`가 남아 있지 않아야 합니다.
 
@@ -233,6 +250,8 @@ if (-not (Test-Path -LiteralPath a365.generated.config.json)) {
 
 기존 `agentRegistrationId`가 있다면 그 **자식의** 등록 ID만 유지합니다. 새 자식에 다른 자식의 등록 ID를 복사하지 마세요. 이미 파일이 있다면 위 명령은 변경하지 않으므로 메모장으로 내용을 확인합니다.
 
+</details>
+
 | 기본값 | 처음에는 어떻게 하나요? |
 |---|---|
 | `REQUIRE_INLINE_OUTPUT=false` | 유지합니다. 답변은 감사만 수행할 수 있으며 민감한 답변의 차단을 보장하지 않습니다. |
@@ -247,6 +266,8 @@ if (-not (Test-Path -LiteralPath a365.generated.config.json)) {
 
 ### 4. Graph 권한, Purview 정책, Agent 365 등록 · Connect permissions and policy
 
+**상위 부서가 준비한 ID를 실행하는 고객:** 아래 변경 명령을 실행하지 않습니다. [제한 환경 확인표](docs/restricted-environment.md)로 이미 승인된 유효 권한과 정책 적용 여부를 확인하고 5단계로 이동합니다. 부족하거나 확인되지 않은 항목은 상위 부서에 문의합니다. 기존 정책이 이 자식·사용자·활동을 포함하면 새 정책을 만들 필요가 없습니다. / Customers using centrally provisioned IDs verify existing coverage and skip administrative changes.
+
 필요한 **자식 → Graph 위임 권한**은 다음 세 가지입니다.
 
 | 권한 | 목적 |
@@ -254,6 +275,8 @@ if (-not (Test-Path -LiteralPath a365.generated.config.json)) {
 | `Files.Read` | 로그인한 사용자의 OneDrive 읽기 |
 | `Content.Process.User` | 사용자의 콘텐츠를 Purview로 검사 |
 | `ProtectionScopes.Compute.User` | 사용자·앱에 적용되는 정책 계산 |
+
+상위 부서가 Blueprint의 **동의와 권한 상속을 이미 구성**했다면 이 세 권한이 자식에 유효하게 제공될 수 있습니다. 아래 직접 부여 예제를 무조건 다시 실행하지 않습니다. 자식의 권한 목록에 보이지 않는 상속 권한도 있으므로, 상위 부서의 확인과 실제 OBO/API 결과로 검증합니다. [직접 부여·상속·유효 권한의 관계](https://learn.microsoft.com/en-us/entra/agent-id/concept-inheritable-permissions)
 
 API 권한 이름을 알아두는 것만으로는 동의가 생성되지 않습니다. 아래 관리자 명령은 **자식 한 개 + 테스트 사용자 한 명**의 동의를 만들거나 필요한 범위를 추가합니다. 기존 권한은 보존합니다. 관리자 도구에는 `DelegatedPermissionGrant.ReadWrite.All`과 적절한 관리 역할이 필요하며, 이것은 에이전트 자체에 추가할 런타임 권한이 아닙니다.
 
@@ -318,7 +341,7 @@ a365 query-entra instance-scopes
 
 </details>
 
-위 명령의 마지막 결과에 세 권한이 모두 있어야 합니다. 다른 기존 동의나 상속이 있으면 접근 범위가 더 넓을 수 있으므로 같이 확인합니다. **웹 로그인 앱 → Blueprint 범위**의 사용자별 동의는 3-5의 별도 절차입니다. [Graph 동의 API](https://learn.microsoft.com/en-us/graph/api/oauth2permissiongrant-post?view=graph-rest-1.0)
+위 직접 부여 예제에서는 `$verified.scope`에 세 권한이 모두 있어야 합니다. `instance-scopes` 조회만으로 상속된 유효 권한 전체를 판단하지 않습니다. 다른 기존 동의나 상속도 상위 부서의 관리 기준에 따라 확인합니다. **웹 로그인 앱 → Blueprint 범위**의 사용자별 동의는 3-5의 별도 절차입니다. [Graph 동의 API](https://learn.microsoft.com/en-us/graph/api/oauth2permissiongrant-post?view=graph-rest-1.0)
 
 다음으로 [Purview 설정 안내](docs/purview-setup.md)를 따라 **SIT 선택 → DLP 규칙 → 자식 Agent ID와 사용자 지정**을 완료합니다. 이 예제는 질문과 추출된 문서 텍스트를 `uploadText`로 검사하므로 `uploadFile`만 차단하는 규칙으로는 충분하지 않습니다.
 
@@ -334,10 +357,15 @@ a365 setup all --agent-registration-only
 
 ### 5. 실행하고 확인하기 · Run and verify
 
-모델을 사용할 계정으로 Foundry 테넌트에 로그인하고 실행합니다.
+`FOUNDRY_AUTH_MODE=azure_cli`일 때만 모델 호출 계정으로 로그인합니다. 승인된 `api_key` 방식이면 이 로그인 명령은 건너뜁니다.
 
 ```powershell
 az login --tenant "<FOUNDRY_TENANT_ID>"
+```
+
+두 방식 모두 다음 Python 명령으로 검사하고 실행합니다.
+
+```powershell
 .\.venv\Scripts\python.exe scripts/check_setup.py
 .\.venv\Scripts\python.exe app.py
 ```
@@ -369,7 +397,7 @@ flowchart TD
     G --> F["Purview 문서 전체 검사<br/>Full document check"]
     F -->|"허용 / Allow"| M["Foundry 모델<br/>LLM"]
     P -->|"허용된 일반 채팅 / Allowed text chat"| M
-    C["Azure CLI 로그인<br/>Model authentication"] -.-> M
+    C["Azure CLI / 승인된 API key<br/>Approved model authentication"] -.-> M
     M --> R["Purview 답변 검사·감사<br/>Response check / audit"]
     R --> B["브라우저 답변<br/>Browser reply"]
     P -->|"차단·오류 / Block or error"| S["중단 및 기록<br/>Stop and log"]
@@ -387,12 +415,14 @@ flowchart LR
 
 ## English guide
 
+For centrally provided IDs with no .NET/a365 installation or tenant administration access, use the [restricted-environment runbook](docs/restricted-environment.md). Prepare only `.env`, verify existing effective permissions and policy coverage with upstream IT, and run Python on the customer's approved machine. Inherited grants may already satisfy the child permissions. Administrative creation and CLI files below are only for authorized provisioning staff.
+
 Use the five steps above; commands and configuration keys are shared between both languages. This public repository contains no working tenant credentials or private deployment settings. Fill **all required values**, not just two secrets. [Detailed English field-by-field recipes](docs/environment-values.md) and [Purview setup](docs/purview-setup.md) explain the same workflow.
 
-1. **Clone and install:** clone the repository URL in step 1. Install Python 3.14, create `.venv`, and install `requirements.txt`. Install Azure CLI; administrators also need .NET 8+ and the Agent 365 CLI. Copy both `.env.example` and `a365.config.example.json` only when their active files do not exist.
+1. **Clone and install:** clone the repository URL in step 1. Install Python 3.14, create `.venv`, and install `requirements.txt`. Copy `.env.example` only if `.env` does not exist. Azure CLI is needed only for `azure_cli` model authentication; an approved API-key mode needs no Azure CLI. Only authorized provisioning staff need .NET/a365 and the optional CLI configuration files.
 2. **Tenant and blueprint:** copy Tenant ID from **Entra ID → Overview** into `ENTRA_TENANT_ID` and CLI `tenantId`. In **Agents → Agent blueprints**, copy **Blueprint Application ID** into `BLUEPRINT_CLIENT_ID`; the list's Object ID identifies its service principal. In the selected blueprint's **Developer settings → Credentials**, add a dedicated client secret and copy **Value**, never Secret ID, into `BLUEPRINT_CLIENT_SECRET`. Preserve existing credentials. Verify or add the exposed delegated scope and access-token version 2 using the [environment guide](docs/environment-values.md). This app requires `BLUEPRINT_SCOPE=api://<BLUEPRINT_CLIENT_ID>/<actual-scope-name>`; another custom URI or `.default` is not accepted.
 3. **Browser and child:** reuse an existing compatible single-tenant confidential Web app, or create one under **App registrations** only if needed. Configure Web redirect `http://localhost:8000/auth/callback`; preserve other callbacks. Its Overview Application (client) ID becomes `WEB_CLIENT_ID`; an available valid secret **Value**, or a dedicated newly added one, becomes `WEB_CLIENT_SECRET`. MSAL uses these credentials. Add the blueprint's actual delegated API scope and complete user-specific consent. From the blueprint's linked identities, copy the child's Object ID into both `AGENT_IDENTITY_ID` and `PURVIEW_APP_ID`; create a child only if missing. Set `APP_NAME` and the CLI display names. Copy the test user's UPN from **Users** into `EXPECTED_USER`; permission grants separately require the user's Object ID. The CLI app ID is a separate registration. Restore the ignored generated-state JSON with your own IDs using step 3-9.
-4. **Model and permissions:** select the deployment under Foundry **Build → Models** (older UI: Models + endpoints). Copy its **resource-root inference endpoint**, without `/api/projects/...`, `/openai/v1/`, or `/responses`, into `FOUNDRY_ENDPOINT`; copy the **deployment name**, not just model name, into `FOUNDRY_DEPLOYMENT`. Select its Azure subscription and read `tenantId` into `FOUNDRY_TENANT_ID`. Keep `FOUNDRY_AUTH_MODE=azure_cli` and sign in with an inference-authorized user; leave the API key blank. Alternatively, explicitly choose `api_key` and obtain a key from the resource's Keys and Endpoint page. Run the administrator grant block in step 4 to create or extend the **child's** three Graph delegated scopes for one user; the web app receives the blueprint API scope instead of OneDrive permission. Existing scopes are preserved and read back. Configure the SIT, UploadText rule, and child/user targets in [the Purview guide](docs/purview-setup.md). Register an existing child using only the shown registration-only CLI commands if registration is still needed.
+4. **Model and permissions:** select the deployment under Foundry **Build → Models** (older UI: Models + endpoints). Copy its **resource-root inference endpoint**, without `/api/projects/...`, `/openai/v1/`, or `/responses`, into `FOUNDRY_ENDPOINT`; copy the **deployment name**, not just model name, into `FOUNDRY_DEPLOYMENT`. Select its Azure subscription and read `tenantId` into `FOUNDRY_TENANT_ID`. Use `FOUNDRY_AUTH_MODE=azure_cli` with an inference-authorized user, or an explicitly approved `api_key` configuration. Confirm the child's three effective delegated Graph scopes first; central blueprint inheritance may already supply them. Only authorized provisioning staff should use the step 4 direct-grant example when effective permissions are missing. The web app receives the blueprint API scope. Central policy administrators verify existing SIT, UploadText, and child/user coverage, using [the Purview guide](docs/purview-setup.md) for approved changes if needed. Registration-only CLI commands are for authorized onboarding staff when registration remains necessary.
 5. **Verify and run:** `scripts/check_setup.py` checks required-setting presence; it does not prove the values are correct or that live consent and policies work. Run `app.py`, open localhost, and sign in as the configured user. Leave OneDrive path empty for chat, or enter a root-relative `.txt` filename for document testing. A policy-block message differs from an evaluation error. Output auditing is the default; inline output blocking requires applicable tenant policy. Stop with Ctrl+C.
 
 The test environment passed 152 offline tests, a real model reply, and live file-content blocking. A separate 93-byte complete-file diagnostic made zero Foundry calls. Revalidate in your tenant: these results do not configure your policies. Git ignores `.env`, active CLI configuration, generated state, `.venv`, `.local`, and logs. See [onboarding and diagnostics](docs/onboarding.md) for safe registration, acceptance tests, and SDK boundaries.

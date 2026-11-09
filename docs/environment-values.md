@@ -4,6 +4,8 @@
 
 This guide maps each setting to its source and destination. Replace every placeholder with your own value. Repeated-digit UUIDs and example domains are fictional.
 
+**상위 부서가 값을 제공하는 실행자:** [제한 환경 안내](restricted-environment.md)에 따라 `.env`만 준비합니다. 이 문서의 앱/Secret 생성·Graph 변경·CLI 절차는 권한 있는 담당자를 위한 참고이며, Python 실행의 필수 단계가 아닙니다. / Runtime-only customers use the restricted guide and prepare `.env`; provisioning commands and CLI files belong to authorized administrators.
+
 ## 1. 두 파일 준비 · Prepare two files
 
 ```powershell

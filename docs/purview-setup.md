@@ -1,5 +1,7 @@
 # Purview 설정 실습 가이드 / Purview setup walkthrough
 
+**정책을 수정할 권한이 없는 고객:** 이 문서의 생성·변경 명령은 실행하지 않습니다. [제한 환경 실행 안내](restricted-environment.md)에 따라 상위 부서에 **기존 정책의 자식 앱·사용자·활동 적용 여부**를 확인하고, 고객 PC에서 승인된 테스트를 진행합니다. 적용되는 정책이 없거나 offline 감사만 허용되면 로컬 코드로 inline 차단 정책을 만들 수 없습니다. / Customers without policy administration rights verify existing coverage with upstream IT and use the restricted runbook. Policy creation examples below are for authorized policy administrators.
+
 이 문서는 **SIT 선택 → 앱·사용자 범위 지정 → DLP 차단 규칙 → 실제 파일 테스트** 순서로 진행합니다. 한국어 설명 다음에 영어 설명을 함께 제공합니다. 실행 환경과 Agent 365 등록은 [README](../README.md)와 [onboarding](onboarding.md)을 참고하세요.
 
 **English:** Follow the steps to select a sensitive information type (SIT), target the application and user, configure a DLP rule, and verify a real file block. Runtime setup and Agent 365 registration are covered in the linked guides.

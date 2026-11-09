@@ -1,5 +1,7 @@
 # 온보딩과 검증 · Onboarding and validation
 
+**.NET/a365 CLI가 허용되지 않거나 기존 ID를 전달받은 실행자:** 이 문서의 생성·등록·권한 변경 명령은 건너뛰고 [제한 환경 실행 안내](restricted-environment.md)를 사용합니다. 이 문서는 권한 있는 상위 부서의 온보딩 담당자용입니다. / Runtime-only customers should use the restricted guide; the provisioning commands here are for authorized upstream administrators.
+
 이 문서는 기존 Blueprint를 재사용하는 관리자를 위한 보충 안내입니다. 처음 실행한다면 [README의 5단계](../README.md)를 먼저 따르세요. 환경값의 화면 위치와 생성 방법은 [환경값별 안내](environment-values.md), SIT와 DLP 구성은 [Purview 설정](purview-setup.md)에 있습니다. 모든 `<...>`는 사용자의 실제 환경값으로 바꿉니다.
 
 This guide supplements the README for administrators reusing an existing blueprint. Start with [the five-step README](../README.md); use [field-by-field environment setup](environment-values.md) and [Purview configuration](purview-setup.md) for the corresponding tasks. The repository includes no live tenant credentials or private deployment identifiers.
