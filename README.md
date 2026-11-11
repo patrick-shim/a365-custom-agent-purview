@@ -14,6 +14,8 @@
 
 **향후 권장 아키텍처 — 이번 POC 범위 밖:** [Purview로 보호하는 OneDrive MCP 설계안](docs/protected-onedrive-mcp-design.md)에 공통 MCP 서버·스킬의 역할, 사용자별 OBO 흐름과 도입 조건을 정리했습니다. **MCP 방식은 미구현 제안이며, 이번 POC는 현재 Python 에이전트 코드를 그대로 사용합니다.** / The [protected OneDrive MCP design](docs/protected-onedrive-mcp-design.md) is a future recommendation, unimplemented and outside this POC. The current Python agent remains the POC implementation.
 
+**상위 부서의 새 Purview 정책 설정용:** [공식 가이드 기반 PowerShell 안내](docs/purview-policy-script.md)에서 별도 공유용 스크립트와 설정 예제를 제공합니다. 기본 실행은 오프라인 미리보기이며, 기존 정책을 자동 갱신하지 않습니다. Python 실행용 파일은 아닙니다. / The [administrator policy-script guide](docs/purview-policy-script.md) provides an offline preview and explicit creation of a new policy. Existing policies are not automatically updated.
+
 ### 먼저 구분하기: MSAL, 앱 등록, Agent ID
 
 | 용어 / Term | 역할 / Role |

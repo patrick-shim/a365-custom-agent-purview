@@ -183,6 +183,8 @@ if ($applyExistingChange -and -not $alreadyIncluded) {
 
 ## 4B. 별도 환경: 새 정책과 규칙 만들기 / Create a new policy elsewhere
 
+**공유용 파일로 진행하려면:** [공식 가이드 기반 스크립트 안내](purview-policy-script.md)를 사용하세요. 별도 `.ps1`과 `.psd1` 설정 예제를 제공하며 기존 로컬 `include_demo_in_dlp.ps1`는 변경하지 않습니다. 아래 블록은 같은 원리를 보여 주는 수동 예제입니다. 같은 목적의 정책을 두 방식으로 중복 생성하지 않고 한 경로를 선택합니다. / Use the linked script guide for reusable files; the block below is a manual alternative, not an additional policy to create.
+
 이 단계는 **기존 정책을 재사용하지 않을 때만** 선택합니다. Entra 등록 앱을 위한 DLP 규칙은 현재 Microsoft 안내에 따라 PowerShell로 생성합니다. 일반 DLP 포털 마법사를 사용하는 것만으로 이 앱 대상 규칙이 만들어졌다고 판단하지 않습니다. [Entra 앱 DLP 설정 / App-policy guidance](https://learn.microsoft.com/en-us/purview/developer/use-the-api)
 
 **English:** Use this alternative only when a separate policy is needed. Current Microsoft guidance requires PowerShell for Entra-registered application DLP rules; do not assume a generic portal-created policy covers this app.
