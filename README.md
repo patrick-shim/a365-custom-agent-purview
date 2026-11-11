@@ -16,6 +16,8 @@
 
 **상위 부서의 새 Purview 정책 설정용:** [공식 가이드 기반 PowerShell 안내](docs/purview-policy-script.md)에서 별도 공유용 스크립트와 설정 예제를 제공합니다. 기본 실행은 오프라인 미리보기이며, 기존 정책을 자동 갱신하지 않습니다. Python 실행용 파일은 아닙니다. / The [administrator policy-script guide](docs/purview-policy-script.md) provides an offline preview and explicit creation of a new policy. Existing policies are not automatically updated.
 
+**기존 DLP에 Agent를 GUI로 추가하려면:** [PowerShell GUI 실행 안내](docs/purview-agent-gui.md)를 따라 로그인 → 정책 조회·선택 → Agent ID와 이름 입력 → 앱 추가 순서로 진행합니다. / The [PowerShell GUI guide](docs/purview-agent-gui.md) shows how to list existing policies and add an agent to a supported active policy.
+
 ### 먼저 구분하기: MSAL, 앱 등록, Agent ID
 
 | 용어 / Term | 역할 / Role |
